@@ -12,6 +12,7 @@
 		tampilPegawai();
 		tampilPosisi();
 		tampilKota();
+		tampilTransaksi();
 		<?php
 			if ($this->session->flashdata('msg') != '') {
 				echo "effect_msg();";
@@ -33,6 +34,14 @@
 		// $('.msg').hide();
 		$('.msg').show(1000);
 		setTimeout(function() { $('.msg').fadeOut(1000); }, 3000);
+	}
+
+	function tampilTransaksi() {
+		$.get('<?php echo base_url('Transaction/tampil'); ?>', function(data) {
+			MyTable.fnDestroy();
+			$('#data-transaksi').html(data);
+			refresh();
+		});
 	}
 
 	function tampilPegawai() {

@@ -33,8 +33,8 @@
         </a>
       </li>
 
-      <li <?php if ($page == 'posisi') {echo 'class="active"';} ?>>
-        <a href="<?php echo base_url('Posisi'); ?>">
+      <li <?php if ($page == 'transaksi') {echo 'class="active"';} ?>>
+        <a href="<?php echo base_url('Transaction'); ?>">
           <i class="fa fa-briefcase"></i>
           <span>Data Transaksi siswa</span>
         </a>
