@@ -2,202 +2,270 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Pegawai extends AUTH_Controller {
-	public function __construct() {
-		parent::__construct();
-		$this->load->model('M_pegawai');
-		$this->load->model('M_posisi');
-		$this->load->model('M_kota');
-	}
+    public function __construct() {
+        parent::__construct();
+        $this->load->model('M_pegawai');
+        $this->load->model('M_posisi');
+        $this->load->model('M_kota');
+    }
 
-	public function index() {
-		$data['userdata'] = $this->userdata;
-		$data['dataPegawai'] = $this->M_pegawai->select_all();
-		$data['dataPosisi'] = $this->M_posisi->select_all();
-		$data['dataKota'] = $this->M_kota->select_all();
+    public function index() {
+        $data['userdata'] = $this->userdata;
+        $data['dataPegawai'] = $this->M_pegawai->select_all();
+        $data['dataPosisi'] = $this->M_posisi->select_all();
+        $data['dataKota'] = $this->M_kota->select_all();
 
-		$data['page'] = "pegawai";
-		$data['judul'] = "Data Pegawai";
-		$data['deskripsi'] = "Manage Data Pegawai";
+        $data['page'] = "pegawai";
+        $data['judul'] = "Data Pegawai";
+        $data['deskripsi'] = "Manage Data Pegawai";
 
-		$data['modal_tambah_pegawai'] = show_my_modal('modals/modal_tambah_pegawai', 'tambah-pegawai', $data);
+        $data['modal_tambah_pegawai'] = show_my_modal('modals/modal_tambah_pegawai', 'tambah-pegawai', $data);
 
-		$this->template->views('pegawai/home', $data);
-	}
+        $this->template->views('pegawai/home', $data);
+    }
 
-	public function tampil() {
-		$data['dataPegawai'] = $this->M_pegawai->select_all();
-		$this->load->view('pegawai/list_data', $data);
-	}
+    public function tampil() {
+        $data['dataPegawai'] = $this->M_pegawai->select_all();
+        $this->load->view('pegawai/list_data', $data);
+    }
 
-	public function prosesTambah() {
+    public function prosesTambah() {
         $this->form_validation->set_rules('nama', 'Nama', 'trim|required');
         $this->form_validation->set_rules('idPeserta', 'ID', 'trim|required');
         $this->form_validation->set_rules('saldo', 'Saldo', 'trim|required');
-        $this->form_validation->set_rules('status', 'Status', 'trim|required');
+        $this->form_validation->set_rules('pin', 'PIN', 'trim|required');
+        $this->form_validation->set_rules('repin', 'Konfirmasi PIN', 'trim|required');
+
+        $formValid = true;
+        if(!getimagesize($_FILES['file']['tmp_name'])){
+            $out['status'] = 'form';
+            $out['msg'] = show_err_msg('File yang di upload bukan foto');
+            $formValid = false;
+        }
+        if($_FILES['file']['size'] > 5000000){
+            $out['status'] = 'form';
+            $out['msg'] = show_err_msg('Ukuran file yang di upload melebihi batas maksimum (5 MB)');
+            $formValid = false;
+        }
+
+        if($_POST['pin'] !== '' && $_POST['repin'] !== ''){
+            if($_POST['pin'] !== $_POST['repin']){
+                $out['status'] = 'form';
+                $out['msg'] = show_err_msg('PIN dan Konfirmasi PIN yang Dimasukkan Berbeda');
+                $formValid = false;
+            }
+        }
+        $user_data = $this->session->userdata('userdata');
+
+        if ($this->form_validation->run() == TRUE && $formValid) {
+            $tmp_name = $_FILES['file']['tmp_name'];
+            $filename = 'foto_'.$_POST['nama']. '.jpg';
+            if(!move_uploaded_file($tmp_name, 'uploads\images/'. $filename)){
+                $out['status'] = 'form';
+                $out['msg'] = show_err_msg('Upload gambar gagal');
+            }else{
+                $result = $this->M_pegawai->insert($_POST,$filename,$user_data);
+                if ($result['code'] == 0) {
+                    $out['status'] = '';
+                    $out['msg'] = show_succ_msg('Data Pegawai Berhasil ditambahkan', '20px');
+                } else {
+                    $out['status'] = 'form';
+                    $out['msg'] = show_err_msg('Data Pegawai Gagal ditambahkan kode: ' . $result['code'] . ' deskripsi: ' .$result['message'] .'');
+                }
+            }
+        }else {
+            $out['status'] = 'form';
+            if(!isset($out['msg'])){
+                $out['msg'] = show_err_msg(validation_errors());
+            }
+        }
+
+
+        echo json_encode($out);
+    }
+
+    public function update() {
+        $id = trim($_POST['id']);
+
+        $data['dataPegawai'] = $this->M_pegawai->select_by_id($id);
+        $data['userdata'] = $this->userdata;
+
+        echo show_my_modal('modals/modal_update_pegawai', 'update-pegawai', $data);
+    }
+
+    public function prosesUpdate() {
+        $this->form_validation->set_rules('nama', 'Nama', 'trim|required');
+        $this->form_validation->set_rules('idPeserta', 'ID', 'trim|required');
 
         $data = $this->input->post();
-		if ($this->form_validation->run() == TRUE) {
-			$result = $this->M_pegawai->insert($data);
+        if ($this->form_validation->run() == TRUE) {
+            $result = $this->M_pegawai->update($data);
 
-			if ($result > 0) {
-				$out['status'] = '';
-				$out['msg'] = show_succ_msg('Data Pegawai Berhasil ditambahkan', '20px');
-			} else {
-				$out['status'] = '';
-				$out['msg'] = show_err_msg('Data Pegawai Gagal ditambahkan', '20px');
-			}
-		} else {
-			$out['status'] = 'form';
-			$out['msg'] = show_err_msg(validation_errors());
-		}
+            if ($result > 0) {
+                $out['status'] = '';
+                $out['msg'] = show_succ_msg('Data Pegawai Berhasil diupdate', '20px');
+            } else {
+                $out['status'] = '';
+                $out['msg'] = show_succ_msg('Data Pegawai Gagal diupdate', '20px');
+            }
+        } else {
+            $out['status'] = 'form';
+            $out['msg'] = show_err_msg(validation_errors());
+        }
 
-		echo json_encode($out);
-	}
+        echo json_encode($out);
+    }
 
-	public function update() {
-		$id = trim($_POST['id']);
+    public function detail() {
+        $data['userdata'] 	= $this->userdata;
+        $id 				= trim($_POST['id']);
+        $data['pegawai'] = $this->M_pegawai->select_by_id($id);
+        //INI PERLU TAMBAHIN GET LAST TRANSACTION
 
-		$data['dataPegawai'] = $this->M_pegawai->select_by_id($id);
-		$data['userdata'] = $this->userdata;
+        echo show_my_modal('modals/modal_detail_pegawai', 'detail-pegawai', $data, 'lg');
+    }
 
-		echo show_my_modal('modals/modal_update_pegawai', 'update-pegawai', $data);
-	}
+    public function topUp(){
+        $data['userdata'] 	= $this->userdata;
+        $id 				= trim($_POST['id']);
+        $data['pegawai'] = $this->M_pegawai->select_by_id($id);
 
-	public function prosesUpdate() {
-		$this->form_validation->set_rules('nama', 'Nama', 'trim|required');
-		$this->form_validation->set_rules('idPeserta', 'ID', 'trim|required');
-		$this->form_validation->set_rules('saldo', 'Saldo', 'trim|required');
+        echo show_my_modal('modals/modal_topup_pegawai', 'topup-pegawai', $data, 'lg');
+    }
 
-		$data = $this->input->post();
-		if ($this->form_validation->run() == TRUE) {
-			$result = $this->M_pegawai->update($data);
+    public function prosesTopup(){
+        $this->form_validation->set_rules('jumlah', 'Jumlah Topup', 'trim|required');
 
-			if ($result > 0) {
-				$out['status'] = '';
-				$out['msg'] = show_succ_msg('Data Pegawai Berhasil diupdate', '20px');
-			} else {
-				$out['status'] = '';
-				$out['msg'] = show_succ_msg('Data Pegawai Gagal diupdate', '20px');
-			}
-		} else {
-			$out['status'] = 'form';
-			$out['msg'] = show_err_msg(validation_errors());
-		}
+        $data = $this->input->post();
+        if ($this->form_validation->run() == TRUE) {
+            $result = $this->M_pegawai->topup($data);
 
-		echo json_encode($out);
-	}
+            if ($result > 0) {
+                $out['status'] = '';
+                $out['msg'] = show_succ_msg('TopUp Berhasil', '20px');
+            } else {
+                $out['status'] = '';
+                $out['msg'] = show_succ_msg('TopUp Gagal', '20px');
+            }
+        } else {
+            $out['status'] = 'form';
+            $out['msg'] = show_err_msg(validation_errors());
+        }
 
-	public function delete() {
-		$id = $_POST['id'];
-		$result = $this->M_pegawai->delete($id);
+        echo json_encode($out);
+    }
 
-		if ($result > 0) {
-			echo show_succ_msg('Data Pegawai Berhasil dihapus', '20px');
-		} else {
-			echo show_err_msg('Data Pegawai Gagal dihapus', '20px');
-		}
-	}
+    public function delete() {
+        $id = $_POST['id'];
+        $result = $this->M_pegawai->delete($id);
 
-	public function export() {
-		error_reporting(E_ALL);
-    
-		include_once './assets/phpexcel/Classes/PHPExcel.php';
-		$objPHPExcel = new PHPExcel();
+        if ($result > 0) {
+            echo show_succ_msg('Data Pegawai Berhasil dihapus', '20px');
+        } else {
+            echo show_err_msg('Data Pegawai Gagal dihapus', '20px');
+        }
+    }
 
-		$data = $this->M_pegawai->select_all_pegawai();
+    public function export() {
+        error_reporting(E_ALL);
 
-		$objPHPExcel = new PHPExcel(); 
-		$objPHPExcel->setActiveSheetIndex(0); 
-		$rowCount = 1; 
+        include_once './assets/phpexcel/Classes/PHPExcel.php';
+        $objPHPExcel = new PHPExcel();
 
-		$objPHPExcel->getActiveSheet()->SetCellValue('A'.$rowCount, "ID");
-		$objPHPExcel->getActiveSheet()->SetCellValue('B'.$rowCount, "Nama");
-		$objPHPExcel->getActiveSheet()->SetCellValue('C'.$rowCount, "Nomor Telepon");
-		$objPHPExcel->getActiveSheet()->SetCellValue('D'.$rowCount, "ID Kota");
-		$objPHPExcel->getActiveSheet()->SetCellValue('E'.$rowCount, "ID Kelamin");
-		$objPHPExcel->getActiveSheet()->SetCellValue('F'.$rowCount, "ID Posisi");
-		$objPHPExcel->getActiveSheet()->SetCellValue('G'.$rowCount, "Status");
-		$rowCount++;
+        $data = $this->M_pegawai->select_all_pegawai();
 
-		foreach($data as $value){
-		    $objPHPExcel->getActiveSheet()->SetCellValue('A'.$rowCount, $value->id); 
-		    $objPHPExcel->getActiveSheet()->SetCellValue('B'.$rowCount, $value->nama); 
-		    $objPHPExcel->getActiveSheet()->setCellValueExplicit('C'.$rowCount, $value->telp, PHPExcel_Cell_DataType::TYPE_STRING);
-		    $objPHPExcel->getActiveSheet()->SetCellValue('D'.$rowCount, $value->id_kota); 
-		    $objPHPExcel->getActiveSheet()->SetCellValue('E'.$rowCount, $value->id_kelamin); 
-		    $objPHPExcel->getActiveSheet()->SetCellValue('F'.$rowCount, $value->id_posisi); 
-		    $objPHPExcel->getActiveSheet()->SetCellValue('G'.$rowCount, $value->status); 
-		    $rowCount++; 
-		} 
+        $objPHPExcel = new PHPExcel();
+        $objPHPExcel->setActiveSheetIndex(0);
+        $rowCount = 1;
 
-		$objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel); 
-		$objWriter->save('./assets/excel/Data Pegawai.xlsx'); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('A'.$rowCount, "ID");
+        $objPHPExcel->getActiveSheet()->SetCellValue('B'.$rowCount, "Nama");
+        $objPHPExcel->getActiveSheet()->SetCellValue('C'.$rowCount, "Nomor Telepon");
+        $objPHPExcel->getActiveSheet()->SetCellValue('D'.$rowCount, "ID Kota");
+        $objPHPExcel->getActiveSheet()->SetCellValue('E'.$rowCount, "ID Kelamin");
+        $objPHPExcel->getActiveSheet()->SetCellValue('F'.$rowCount, "ID Posisi");
+        $objPHPExcel->getActiveSheet()->SetCellValue('G'.$rowCount, "Status");
+        $rowCount++;
 
-		$this->load->helper('download');
-		force_download('./assets/excel/Data Pegawai.xlsx', NULL);
-	}
+        foreach($data as $value){
+            $objPHPExcel->getActiveSheet()->SetCellValue('A'.$rowCount, $value->id);
+            $objPHPExcel->getActiveSheet()->SetCellValue('B'.$rowCount, $value->nama);
+            $objPHPExcel->getActiveSheet()->setCellValueExplicit('C'.$rowCount, $value->telp, PHPExcel_Cell_DataType::TYPE_STRING);
+            $objPHPExcel->getActiveSheet()->SetCellValue('D'.$rowCount, $value->id_kota);
+            $objPHPExcel->getActiveSheet()->SetCellValue('E'.$rowCount, $value->id_kelamin);
+            $objPHPExcel->getActiveSheet()->SetCellValue('F'.$rowCount, $value->id_posisi);
+            $objPHPExcel->getActiveSheet()->SetCellValue('G'.$rowCount, $value->status);
+            $rowCount++;
+        }
 
-	public function import() {
-		$this->form_validation->set_rules('excel', 'File', 'trim|required');
+        $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
+        $objWriter->save('./assets/excel/Data Pegawai.xlsx');
 
-		if ($_FILES['excel']['name'] == '') {
-			$this->session->set_flashdata('msg', 'File harus diisi');
-		} else {
-			$config['upload_path'] = './assets/excel/';
-			$config['allowed_types'] = 'xls|xlsx';
-			
-			$this->load->library('upload', $config);
-			
-			if ( ! $this->upload->do_upload('excel')){
-				$error = array('error' => $this->upload->display_errors());
-			}
-			else{
-				$data = $this->upload->data();
-				
-				error_reporting(E_ALL);
-				date_default_timezone_set('Asia/Jakarta');
+        $this->load->helper('download');
+        force_download('./assets/excel/Data Pegawai.xlsx', NULL);
+    }
 
-				include './assets/phpexcel/Classes/PHPExcel/IOFactory.php';
+    public function import() {
+        $this->form_validation->set_rules('excel', 'File', 'trim|required');
 
-				$inputFileName = './assets/excel/' .$data['file_name'];
-				$objPHPExcel = PHPExcel_IOFactory::load($inputFileName);
-				$sheetData = $objPHPExcel->getActiveSheet()->toArray(null,true,true,true);
+        if ($_FILES['excel']['name'] == '') {
+            $this->session->set_flashdata('msg', 'File harus diisi');
+        } else {
+            $config['upload_path'] = './assets/excel/';
+            $config['allowed_types'] = 'xls|xlsx';
 
-				$index = 0;
-				foreach ($sheetData as $key => $value) {
-					if ($key != 1) {
-						$id = md5(DATE('ymdhms').rand());
-						$check = $this->M_pegawai->check_nama($value['B']);
+            $this->load->library('upload', $config);
 
-						if ($check != 1) {
-							$resultData[$index]['id'] = $id;
-							$resultData[$index]['nama'] = ucwords($value['B']);
-							$resultData[$index]['telp'] = $value['C'];
-							$resultData[$index]['id_kota'] = $value['D'];
-							$resultData[$index]['id_kelamin'] = $value['E'];
-							$resultData[$index]['id_posisi'] = $value['F'];
-							$resultData[$index]['status'] = $value['G'];
-						}
-					}
-					$index++;
-				}
+            if ( ! $this->upload->do_upload('excel')){
+                $error = array('error' => $this->upload->display_errors());
+            }
+            else{
+                $data = $this->upload->data();
 
-				unlink('./assets/excel/' .$data['file_name']);
+                error_reporting(E_ALL);
+                date_default_timezone_set('Asia/Jakarta');
 
-				if (count($resultData) != 0) {
-					$result = $this->M_pegawai->insert_batch($resultData);
-					if ($result > 0) {
-						$this->session->set_flashdata('msg', show_succ_msg('Data Pegawai Berhasil diimport ke database'));
-						redirect('Pegawai');
-					}
-				} else {
-					$this->session->set_flashdata('msg', show_msg('Data Pegawai Gagal diimport ke database (Data Sudah terupdate)', 'warning', 'fa-warning'));
-					redirect('Pegawai');
-				}
+                include './assets/phpexcel/Classes/PHPExcel/IOFactory.php';
 
-			}
-		}
-	}
+                $inputFileName = './assets/excel/' .$data['file_name'];
+                $objPHPExcel = PHPExcel_IOFactory::load($inputFileName);
+                $sheetData = $objPHPExcel->getActiveSheet()->toArray(null,true,true,true);
+
+                $index = 0;
+                foreach ($sheetData as $key => $value) {
+                    if ($key != 1) {
+                        $id = md5(DATE('ymdhms').rand());
+                        $check = $this->M_pegawai->check_nama($value['B']);
+
+                        if ($check != 1) {
+                            $resultData[$index]['id'] = $id;
+                            $resultData[$index]['nama'] = ucwords($value['B']);
+                            $resultData[$index]['telp'] = $value['C'];
+                            $resultData[$index]['id_kota'] = $value['D'];
+                            $resultData[$index]['id_kelamin'] = $value['E'];
+                            $resultData[$index]['id_posisi'] = $value['F'];
+                            $resultData[$index]['status'] = $value['G'];
+                        }
+                    }
+                    $index++;
+                }
+
+                unlink('./assets/excel/' .$data['file_name']);
+
+                if (count($resultData) != 0) {
+                    $result = $this->M_pegawai->insert_batch($resultData);
+                    if ($result > 0) {
+                        $this->session->set_flashdata('msg', show_succ_msg('Data Pegawai Berhasil diimport ke database'));
+                        redirect('Pegawai');
+                    }
+                } else {
+                    $this->session->set_flashdata('msg', show_msg('Data Pegawai Gagal diimport ke database (Data Sudah terupdate)', 'warning', 'fa-warning'));
+                    redirect('Pegawai');
+                }
+
+            }
+        }
+    }
 }
 
 /* End of file Pegawai.php */

@@ -86,31 +86,39 @@
 		})
 	})
 
-	$('#form-tambah-pegawai').submit(function(e) {
-		var data = $(this).serialize();
+    $(document).ready(function (e) {
+        $('#form-tambah-pegawai').submit(function(e) {
+            e.preventDefault();
+            var data = $(this).serialize();
+            var file = new FormData(this);
+            console.log(data);
 
-		$.ajax({
-			method: 'POST',
-			url: '<?php echo base_url('Pegawai/prosesTambah'); ?>',
-			data: data
-		})
-		.done(function(data) {
-			var out = jQuery.parseJSON(data);
+            $.ajax({
+                method: 'POST',
+                url: '<?php echo base_url('Pegawai/prosesTambah'); ?>',
+                data: file,
+                processData: false,
+                contentType: false
+            })
+            .done(function(data) {
+                var out = jQuery.parseJSON(data);
 
-			tampilPegawai();
-			if (out.status == 'form') {
-				$('.form-msg').html(out.msg);
-				effect_msg_form();
-			} else {
-				document.getElementById("form-tambah-pegawai").reset();
-				$('#tambah-pegawai').modal('hide');
-				$('.msg').html(out.msg);
-				effect_msg();
-			}
-		})
-		
-		e.preventDefault();
+                tampilPegawai();
+                if (out.status == 'form') {
+                    $('.form-msg').html(out.msg);
+                    effect_msg_form();
+                } else {
+                    document.getElementById("form-tambah-pegawai").reset();
+                    $('#tambah-pegawai').modal('hide');
+                    $('.msg').html(out.msg);
+                    effect_msg();
+                }
+
+            })
+
+            e.preventDefault();
 	});
+    });
 
 	$(document).on('submit', '#form-update-pegawai', function(e){
 		var data = $(this).serialize();
@@ -138,6 +146,33 @@
 		e.preventDefault();
 	});
 
+    $(document).on('submit', '#form-topup-saldo', function(e){
+        var data = $(this).serialize();
+        console.log(data);
+
+        $.ajax({
+            method: 'POST',
+            url: '<?php echo base_url('Pegawai/prosesTopup'); ?>',
+            data: data
+        })
+            .done(function(data) {
+                var out = jQuery.parseJSON(data);
+
+                tampilPegawai();
+                if (out.status == 'form') {
+                    $('.form-msg').html(out.msg);
+                    effect_msg_form();
+                } else {
+                    document.getElementById("form-topup-saldo").reset();
+                    $('#topup-pegawai').modal('hide');
+                    $('.msg').html(out.msg);
+                    effect_msg();
+                }
+            })
+
+        e.preventDefault();
+    });
+
 	$('#tambah-pegawai').on('hidden.bs.modal', function () {
 	  $('.form-msg').html('');
 	})
@@ -145,6 +180,10 @@
 	$('#update-pegawai').on('hidden.bs.modal', function () {
 	  $('.form-msg').html('');
 	})
+
+    $('#topup-pegawai').on('hidden.bs.modal', function () {
+        $('.form-msg').html('');
+    })
 
 	//Kota
 	function tampilKota() {
@@ -210,6 +249,28 @@
 			$('#detail-kota').modal('show');
 		})
 	})
+
+    $(document).on("click", ".detail-dataPegawai", function() {
+        var id = $(this).attr("data-id");
+
+        $.ajax({
+            method: "POST",
+            url: "<?php echo base_url('Pegawai/detail'); ?>",
+            data: "id=" +id
+        })
+            .done(function(data) {
+                $('#tempat-modal').html(data);
+                $('#tabel-detail').dataTable({
+                    "paging": true,
+                    "lengthChange": false,
+                    "searching": true,
+                    "ordering": true,
+                    "info": true,
+                    "autoWidth": false
+                });
+                $('#detail-pegawai').modal('show');
+            })
+    })
 
 	$('#form-tambah-kota').submit(function(e) {
 		var data = $(this).serialize();
@@ -313,6 +374,28 @@
 			$('#update-posisi').modal('show');
 		})
 	})
+
+    $(document).on("click", ".topUpSaldo-pegawai", function() {
+        var id = $(this).attr("data-id");
+
+        $.ajax({
+            method: "POST",
+            url: "<?php echo base_url('Pegawai/topup'); ?>",
+            data: "id=" +id
+        })
+            .done(function(data) {
+                $('#tempat-modal').html(data);
+                $('#tabel-detail').dataTable({
+                    "paging": true,
+                    "lengthChange": false,
+                    "searching": true,
+                    "ordering": true,
+                    "info": true,
+                    "autoWidth": false
+                });
+                $('#topup-pegawai').modal('show');
+            })
+    })
 
 	$(document).on("click", ".detail-dataPosisi", function() {
 		var id = $(this).attr("data-id");

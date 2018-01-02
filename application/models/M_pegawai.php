@@ -11,7 +11,7 @@ class M_pegawai extends CI_Model {
 	}
 
 	public function select_all() {
-		$sql = " SELECT pegawai.id AS id, pegawai.nama AS pegawai, pegawai.telp AS telp, pegawai.saldo AS saldo, pegawai.status AS status, pegawai.id_peserta AS idPeserta FROM pegawai";
+		$sql = "SELECT user.User_ID AS id, user.Name AS pegawai, user.Balance AS saldo FROM user";
 
 		$data = $this->db->query($sql);
 
@@ -19,7 +19,7 @@ class M_pegawai extends CI_Model {
 	}
 
 	public function select_by_id($id) {
-		$sql = "SELECT pegawai.id AS id_pegawai, pegawai.nama AS nama_pegawai, pegawai.saldo AS saldo, pegawai.status AS status, pegawai.id_peserta AS idPeserta  FROM pegawai WHERE pegawai.id = '{$id}'";
+		$sql = "SELECT user.User_ID AS id, user.Name AS nama, user.Balance AS saldo, user.pict_url as foto FROM user WHERE user.user_id = '{$id}'";
 
 		$data = $this->db->query($sql);
 
@@ -43,12 +43,32 @@ class M_pegawai extends CI_Model {
 	}
 
 	public function update($data) {
-		$sql = "UPDATE pegawai SET nama='" .$data['nama'] ."', id_peserta=" .$data['idPeserta'] .", saldo=" .$data['saldo'] .", status=" .$data['status'] ." WHERE id='" .$data['id'] ."'";
+		$sql = "UPDATE user SET name='" .$data['nama'] ."', user_id=" .$data['idPeserta'] ." WHERE user_id='" .$data['id'] ."'";
 
 		$this->db->query($sql);
 
 		return $this->db->affected_rows();
 	}
+
+	public function topup($data){
+  	   $latest_saldo = $this->get_latest_saldo($data['id']);
+
+	    //calculate saldo
+        $saldo = $latest_saldo->balance + $data['jumlah'];
+        $sql = "UPDATE user SET balance='" .$saldo."' WHERE user_id='" .$data['id'] ."'";
+
+        $this->db->query($sql);
+
+        return $this->db->affected_rows();
+    }
+
+    public function get_latest_saldo($id){
+        $sql = "SELECT balance FROM user WHERE user_id =".$id;
+
+        $data = $this->db->query($sql);
+
+        return $data->row();
+    }
 
 	public function delete($id) {
 		$sql = "DELETE FROM pegawai WHERE id='" .$id ."'";
@@ -58,14 +78,20 @@ class M_pegawai extends CI_Model {
 		return $this->db->affected_rows();
 	}
 
-	public function insert($data) {
-		$id = md5(DATE('ymdhms').rand());
-		$sql = "INSERT INTO pegawai VALUES('','" .$data['nama'] ."','','','',''," .$data['status'] ."," .$data['idPeserta'] ."," .$data['saldo'] .")";
+	public function insert($data,$filename,$user_data) {
+        date_default_timezone_set('Asia/Jakarta');
+        $companyId = $user_data->company_id;
+        $admin_name = $user_data->nama;
+        $now = date('Y-m-d H:i:s') ;
+
+        $sql = "INSERT INTO user (`User_ID`, `Company_ID`, `Name`,`Pict_Url`,`PIN`, `User_Type`, `Is_Active`, `Balance`, `Created_Date`, `Created_By`, `Updated_Date`, `Updated_By`)
+                VALUES (" .$data['idPeserta'] ."," .$companyId .",'" .$data['nama'] ."','".$filename ."',".$data['pin'] .",'murid','Y'," .$data['saldo'] .",'".$now."','". $admin_name ."','". $now."','".$admin_name."')";
+//		$sql = "INSERT INTO user VALUES('','" .$data['nama'] ."','','','','',1," .$data['idPeserta'] ."," .$data['saldo'] .",'".$filename ."','".$data['pin'] ."')";
 
 		$this->db->query($sql);
 
-		return $this->db->affected_rows();
-	}
+		return $this->db->error();
+ 	}
 
 	public function insert_batch($data) {
 		$this->db->insert_batch('pegawai', $data);

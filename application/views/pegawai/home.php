@@ -5,13 +5,7 @@
 <div class="box">
   <div class="box-header">
     <div class="col-md-6" style="padding: 0;">
-        <button class="form-control btn btn-primary" data-toggle="modal" data-target="#tambah-pegawai"><i class="glyphicon glyphicon-plus-sign"></i> Tambah Data</button>
-    </div>
-    <div class="col-md-3">
-        <a href="<?php echo base_url('Pegawai/export'); ?>" class="form-control btn btn-default"><i class="glyphicon glyphicon glyphicon-floppy-save"></i> Export Data Excel</a>
-    </div>
-    <div class="col-md-3">
-        <button class="form-control btn btn-default" data-toggle="modal" data-target="#import-pegawai"><i class="glyphicon glyphicon glyphicon-floppy-open"></i> Import Data Excel</button>
+        <button class="form-control btn btn-primary" data-toggle="modal" data-target="#tambah-pegawai" style="width: auto"><i class="glyphicon glyphicon-plus-sign"></i> Tambah Siswa</button>
     </div>
   </div>
   <!-- /.box-header -->
@@ -22,7 +16,6 @@
           <th>Nama</th>
           <th>ID</th>
           <th>Saldo</th>
-          <th>Status</th>
           <th style="text-align: center;">Aksi</th>
         </tr>
       </thead>
