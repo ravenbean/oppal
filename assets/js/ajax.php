@@ -81,6 +81,7 @@
 			data: "id=" +id
 		})
 		.done(function(data) {
+
 			$('#tempat-modal').html(data);
 			$('#update-pegawai').modal('show');
 		})
@@ -121,12 +122,16 @@
     });
 
 	$(document).on('submit', '#form-update-pegawai', function(e){
-		var data = $(this).serialize();
+        e.preventDefault();
+        var data = $(this).serialize();
+        var file = new FormData(this);
 
 		$.ajax({
 			method: 'POST',
 			url: '<?php echo base_url('Pegawai/prosesUpdate'); ?>',
-			data: data
+            data: file,
+            processData: false,
+            contentType: false
 		})
 		.done(function(data) {
 			var out = jQuery.parseJSON(data);
