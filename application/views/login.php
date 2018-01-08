@@ -27,7 +27,7 @@
   <body class="hold-transition login-page">
     <div class="login-box">
       <div class="login-logo">
-        <a href="<?php echo base_url(); ?>"><img src="/oppal/assets/img/oppa_logo.jpeg" width="50%"></a>
+        <a href="<?php echo base_url(); ?>"><img src="/oppal/assets/img/oppal_logo.jpeg" width="50%"></a>
       </div>
 
       <!-- /.login-logo -->
