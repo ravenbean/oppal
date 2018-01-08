@@ -8,7 +8,7 @@
       <span class="input-group-addon" id="sizing-addon2">
         <i class="glyphicon glyphicon-user"></i>
       </span>
-        <input type="hidden" name="id" value="<?php echo $pegawai->id; ?>">
+        <input type="hidden" name="id" value="<?php echo $pegawai->user_id; ?>">
         <input type="text" class="form-control" placeholder="Jumlah Topup" name="jumlah" aria-describedby="sizing-addon2">
     </div>
     <div class="form-group">

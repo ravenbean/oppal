@@ -10,8 +10,9 @@ class M_pegawai extends CI_Model {
 		return $data->result();
 	}
 
-	public function select_all() {
-		$sql = "SELECT user.User_ID AS id, user.Name AS pegawai, user.Balance AS saldo FROM user";
+	public function select_all($company_id) {
+
+		$sql = "SELECT user.User_ID AS id, user.Name AS pegawai, user.Balance AS saldo FROM user WHERE COMPANY_ID='".$company_id."'";
 
 		$data = $this->db->query($sql);
 
@@ -19,7 +20,7 @@ class M_pegawai extends CI_Model {
 	}
 
 	public function select_by_id($id) {
-		$sql = "SELECT user.User_ID AS id, user.Name AS nama, user.Balance AS saldo, user.pict_url as foto FROM user WHERE user.user_id = '{$id}'";
+		$sql = "SELECT ID AS id, user.User_ID AS user_id, user.Name AS nama,user.pin as pin, user.Balance AS saldo, user.pict_url as foto, user.is_active AS status FROM user WHERE user.user_id like '%".$id."'";
 
 		$data = $this->db->query($sql);
 
@@ -42,8 +43,17 @@ class M_pegawai extends CI_Model {
 		return $data->row();
 	}
 
-	public function update($data) {
-		$sql = "UPDATE user SET name='" .$data['nama'] ."', user_id=" .$data['idPeserta'] ." WHERE user_id='" .$data['id'] ."'";
+	public function update($data,$filename,$user_data) {
+        date_default_timezone_set('Asia/Jakarta');
+        $companyId = $user_data->company_id;
+        $admin_name = $user_data->nama;
+        $now = date('Y-m-d H:i:s') ;
+        $id = $companyId.'-'.$data['idPeserta'];
+
+		$sql = "UPDATE user SET name='" .$data['nama'] ."', user_id='" .$id ."', pin='" .$data['pin'] ."'
+		        , is_active=" .$data['status'] .", Pict_Url='" .$filename ."'
+		        , updated_date='" .$now. "', updated_by='" .$admin_name. "' 
+	    	    WHERE id='" .$data['id'] ."'";
 
 		$this->db->query($sql);
 
@@ -63,7 +73,7 @@ class M_pegawai extends CI_Model {
     }
 
     public function get_latest_saldo($id){
-        $sql = "SELECT balance FROM user WHERE user_id =".$id;
+        $sql = "SELECT balance FROM user WHERE user_id ='".$id."'";
 
         $data = $this->db->query($sql);
 
@@ -83,13 +93,14 @@ class M_pegawai extends CI_Model {
         $companyId = $user_data->company_id;
         $admin_name = $user_data->nama;
         $now = date('Y-m-d H:i:s') ;
+        $id = $companyId.'-'.$data['idPeserta'];
 
-        $sql = "INSERT INTO user (`User_ID`, `Company_ID`, `Name`,`Pict_Url`,`PIN`, `User_Type`, `Is_Active`, `Balance`, `Created_Date`, `Created_By`, `Updated_Date`, `Updated_By`)
-                VALUES (" .$data['idPeserta'] ."," .$companyId .",'" .$data['nama'] ."','".$filename ."',".$data['pin'] .",'murid','Y'," .$data['saldo'] .",'".$now."','". $admin_name ."','". $now."','".$admin_name."')";
+        $sql = "INSERT INTO user (`ID`,`User_ID`, `Company_ID`, `Name`,`Pict_Url`,`PIN`, `User_Type`, `Is_Active`, `Balance`, `Created_Date`, `Created_By`, `Updated_Date`, `Updated_By`)
+                VALUES ('','$id',' $companyId ','" .$data['nama'] ."','".$filename ."',".$data['pin'] .",'murid'," .$data['status'] ."," .$data['saldo'] .",'".$now."','". $admin_name ."','". $now."','".$admin_name."')";
 //		$sql = "INSERT INTO user VALUES('','" .$data['nama'] ."','','','','',1," .$data['idPeserta'] ."," .$data['saldo'] .",'".$filename ."','".$data['pin'] ."')";
 
 		$this->db->query($sql);
-
+        unset($sql);
 		return $this->db->error();
  	}
 

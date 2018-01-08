@@ -10,8 +10,9 @@ class Pegawai extends AUTH_Controller {
     }
 
     public function index() {
+        $company_id = $this->session->userdata('userdata')->company_id;
         $data['userdata'] = $this->userdata;
-        $data['dataPegawai'] = $this->M_pegawai->select_all();
+        $data['dataPegawai'] = $this->M_pegawai->select_all($company_id);
         $data['dataPosisi'] = $this->M_posisi->select_all();
         $data['dataKota'] = $this->M_kota->select_all();
 
@@ -25,7 +26,8 @@ class Pegawai extends AUTH_Controller {
     }
 
     public function tampil() {
-        $data['dataPegawai'] = $this->M_pegawai->select_all();
+        $company_id = $this->session->userdata('userdata')->company_id;
+        $data['dataPegawai'] = $this->M_pegawai->select_all($company_id);
         $this->load->view('pegawai/list_data', $data);
     }
 
@@ -35,6 +37,7 @@ class Pegawai extends AUTH_Controller {
         $this->form_validation->set_rules('saldo', 'Saldo', 'trim|required');
         $this->form_validation->set_rules('pin', 'PIN', 'trim|required');
         $this->form_validation->set_rules('repin', 'Konfirmasi PIN', 'trim|required');
+        $this->form_validation->set_rules('status', 'Status', 'trim|required');
 
         $formValid = true;
         if(!getimagesize($_FILES['file']['tmp_name'])){
@@ -59,7 +62,7 @@ class Pegawai extends AUTH_Controller {
 
         if ($this->form_validation->run() == TRUE && $formValid) {
             $tmp_name = $_FILES['file']['tmp_name'];
-            $filename = 'foto_'.$_POST['nama']. '.jpg';
+            $filename = 'foto_'.$_POST['nama']. '_'.$_POST['idPeserta'].'.jpg';
             if(!move_uploaded_file($tmp_name, 'uploads\images/'. $filename)){
                 $out['status'] = 'form';
                 $out['msg'] = show_err_msg('Upload gambar gagal');
@@ -78,10 +81,10 @@ class Pegawai extends AUTH_Controller {
             if(!isset($out['msg'])){
                 $out['msg'] = show_err_msg(validation_errors());
             }
+
         }
 
-
-        echo json_encode($out);
+      echo json_encode($out);
     }
 
     public function update() {
@@ -96,21 +99,68 @@ class Pegawai extends AUTH_Controller {
     public function prosesUpdate() {
         $this->form_validation->set_rules('nama', 'Nama', 'trim|required');
         $this->form_validation->set_rules('idPeserta', 'ID', 'trim|required');
+        $this->form_validation->set_rules('pin', 'PIN', 'trim|required');
+        $this->form_validation->set_rules('repin', 'Konfirmasi PIN', 'trim|required');
+        $this->form_validation->set_rules('status', 'Status', 'trim|required');
+
+        $filename = 'foto_'.$_POST['nama']. '_'.$_POST['idPeserta'].'.jpg';
+        $arr = explode("-", $_POST['oldID'], 2);
+        $oldID = $arr[1];
+        $oldName = 'foto_'.$_POST['oldName']. '_'.$oldID.'.jpg';
+
+        $formValid = true;
+        if($_POST['pin'] !== '' && $_POST['repin'] !== ''){
+            if($_POST['pin'] !== $_POST['repin']){
+                $out['status'] = 'form';
+                $out['msg'] = show_err_msg('PIN dan Konfirmasi PIN yang Dimasukkan Berbeda');
+                $formValid = false;
+            }
+        }
+
+        if($_FILES['file']['size'] > 0) {
+            if (!getimagesize($_FILES['file']['tmp_name'])) {
+                $out['status'] = 'form';
+                $out['msg'] = show_err_msg('File yang di upload bukan foto');
+                $formValid = false;
+            }
+            if ($_FILES['file']['size'] > 5000000) {
+                $out['status'] = 'form';
+                $out['msg'] = show_err_msg('Ukuran file yang di upload melebihi batas maksimum (5 MB)');
+                $formValid = false;
+            }
+        }
 
         $data = $this->input->post();
-        if ($this->form_validation->run() == TRUE) {
-            $result = $this->M_pegawai->update($data);
+        $user_data = $this->session->userdata('userdata');
+        if ($this->form_validation->run() == TRUE && $formValid) {
+            if(file_exists('uploads\images/'. $oldName)) {
+                   rename('uploads\images/'.$oldName,'uploads\images/'.$filename);
+            }
+            if($_FILES['file']['size'] > 0){
+                $tmp_name = $_FILES['file']['tmp_name'];
+                if(file_exists('uploads\images/'. $filename)) {
+                    chmod('uploads\images/'. $filename,0755); //Change the file permissions if allowed
+                    unlink('uploads\images/'. $filename); //remove the file
+                }
+                if(!move_uploaded_file($tmp_name, 'uploads\images/'. $filename)){
+                    $out['status'] = 'form';
+                    $out['msg'] = show_err_msg('Upload gambar gagal');
+                }
+            }
 
+            $result = $this->M_pegawai->update($data,$filename,$user_data);
             if ($result > 0) {
                 $out['status'] = '';
                 $out['msg'] = show_succ_msg('Data Pegawai Berhasil diupdate', '20px');
-            } else {
+            }else {
                 $out['status'] = '';
-                $out['msg'] = show_succ_msg('Data Pegawai Gagal diupdate', '20px');
+                $out['msg'] = show_succ_msg('Data Pegawai Gagal atau tidak ada yang diupdate', '20px');
             }
         } else {
             $out['status'] = 'form';
-            $out['msg'] = show_err_msg(validation_errors());
+            if(!isset($out['msg'])){
+                $out['msg'] = show_err_msg(validation_errors());
+            }
         }
 
         echo json_encode($out);
@@ -137,9 +187,9 @@ class Pegawai extends AUTH_Controller {
         $this->form_validation->set_rules('jumlah', 'Jumlah Topup', 'trim|required');
 
         $data = $this->input->post();
+
         if ($this->form_validation->run() == TRUE) {
             $result = $this->M_pegawai->topup($data);
-
             if ($result > 0) {
                 $out['status'] = '';
                 $out['msg'] = show_succ_msg('TopUp Berhasil', '20px');
