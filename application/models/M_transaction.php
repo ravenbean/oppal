@@ -3,7 +3,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class M_transaction extends CI_Model {
 	public function select_all() {
-		$data = $this->db->get('vw_Transaction');
+        $company_id = $this->session->userdata('userdata')->company_id;
+
+        $sql = "SELECT * FROM vw_Transaction WHERE COMPANY_ID='".$company_id."'";
+
+        $data = $this->db->query($sql);
 
 		return $data->result();
 	}
